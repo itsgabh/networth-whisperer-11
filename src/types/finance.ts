@@ -1,4 +1,10 @@
-export type Currency = 'USD' | 'EUR' | 'GBP';
+export type Currency = 'EUR' | 'USD' | 'GBP' | 'PHP' | 'OTHER';
+
+export interface ConversionRate {
+  currency: Currency;
+  rate: number; // Rate to EUR (e.g., 1 USD = 0.92 EUR)
+  label?: string; // For OTHER currency type
+}
 
 export type AccountCategory = 
   | 'current_asset'
@@ -19,4 +25,7 @@ export interface NetWorthSummary {
   totalAssets: Record<Currency, number>;
   totalLiabilities: Record<Currency, number>;
   netWorth: Record<Currency, number>;
+  totalAssetsEUR: number;
+  totalLiabilitiesEUR: number;
+  netWorthEUR: number;
 }

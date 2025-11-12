@@ -33,7 +33,7 @@ export const AccountDialog = ({
 }: AccountDialogProps) => {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<AccountCategory>('current_asset');
-  const [currency, setCurrency] = useState<Currency>('USD');
+  const [currency, setCurrency] = useState<Currency>('EUR');
   const [balance, setBalance] = useState('0');
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export const AccountDialog = ({
     } else {
       setName('');
       setCategory('current_asset');
-      setCurrency('USD');
+      setCurrency('EUR');
       setBalance('0');
     }
   }, [editAccount, open]);
@@ -103,9 +103,10 @@ export const AccountDialog = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USD">USD ($)</SelectItem>
                   <SelectItem value="EUR">EUR (€)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
                   <SelectItem value="GBP">GBP (£)</SelectItem>
+                  <SelectItem value="PHP">PHP (₱)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

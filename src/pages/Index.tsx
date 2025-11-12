@@ -1,24 +1,36 @@
 import { useState, useMemo } from 'react';
-import { Account, Currency, NetWorthSummary } from '@/types/finance';
+import { Account, Currency, NetWorthSummary, ConversionRate } from '@/types/finance';
 import { NetWorthCard } from '@/components/NetWorthCard';
 import { AccountList } from '@/components/AccountList';
 import { AccountDialog } from '@/components/AccountDialog';
+import { ConversionRateDialog } from '@/components/ConversionRateDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Wallet } from 'lucide-react';
+import { Plus, Wallet, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { defaultConversionRates } from '@/lib/currency';
 
 const Index = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
+  const [ratesDialogOpen, setRatesDialogOpen] = useState(false);
+  const [conversionRates, setConversionRates] = useState<ConversionRate[]>(defaultConversionRates);
   const { toast } = useToast();
 
   const summary: NetWorthSummary = useMemo(() => {
-    const currencies: Currency[] = ['USD', 'EUR', 'GBP'];
+    const currencies: Currency[] = ['EUR', 'USD', 'GBP', 'PHP'];
     const result: NetWorthSummary = {
       totalAssets: {} as Record<Currency, number>,
       totalLiabilities: {} as Record<Currency, number>,
       netWorth: {} as Record<Currency, number>,
+      totalAssetsEUR: 0,
+      totalLiabilitiesEUR: 0,
+      netWorthEUR: 0,
+    };
+
+    const getRateToEUR = (currency: Currency): number => {
+      const rate = conversionRates.find((r) => r.currency === currency);
+      return rate?.rate || 1;
     };
 
     currencies.forEach((currency) => {
@@ -33,10 +45,17 @@ const Index = () => {
       result.totalAssets[currency] = assets;
       result.totalLiabilities[currency] = liabilities;
       result.netWorth[currency] = assets - liabilities;
+
+      // Convert to EUR
+      const rate = getRateToEUR(currency);
+      result.totalAssetsEUR += assets * rate;
+      result.totalLiabilitiesEUR += liabilities * rate;
     });
 
+    result.netWorthEUR = result.totalAssetsEUR - result.totalLiabilitiesEUR;
+
     return result;
-  }, [accounts]);
+  }, [accounts, conversionRates]);
 
   const handleSaveAccount = (accountData: Omit<Account, 'id' | 'lastUpdated'>) => {
     if (editAccount) {
@@ -86,47 +105,47 @@ const Index = () => {
     setDialogOpen(true);
   };
 
-  const activeCurrencies = useMemo(() => {
-    return (['USD', 'EUR', 'GBP'] as Currency[]).filter(
-      (currency) =>
-        summary.totalAssets[currency] > 0 || summary.totalLiabilities[currency] > 0
-    );
-  }, [summary]);
+  const handleSaveRates = (rates: ConversionRate[]) => {
+    setConversionRates(rates);
+    toast({
+      title: 'Conversion rates updated',
+      description: 'Your currency conversion rates have been saved.',
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Wallet className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold text-foreground">Net Worth Tracker</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Wallet className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-4xl font-bold text-foreground">Net Worth Tracker</h1>
+                <p className="text-muted-foreground">
+                  Track your financial position across multiple currencies
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setRatesDialogOpen(true)}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Conversion Rates
+            </Button>
           </div>
-          <p className="text-muted-foreground">
-            Track your financial position across multiple currencies
-          </p>
         </div>
 
-        {/* Net Worth Summary Cards */}
-        <div className="grid gap-6 mb-8 md:grid-cols-2 lg:grid-cols-3">
-          {activeCurrencies.length > 0 ? (
-            activeCurrencies.map((currency) => (
-              <NetWorthCard
-                key={currency}
-                currency={currency}
-                assets={summary.totalAssets[currency]}
-                liabilities={summary.totalLiabilities[currency]}
-              />
-            ))
-          ) : (
-            <div className="col-span-full">
-              <NetWorthCard
-                currency="USD"
-                assets={0}
-                liabilities={0}
-              />
-            </div>
-          )}
+        {/* Net Worth Summary Card */}
+        <div className="mb-8">
+          <NetWorthCard
+            assetsEUR={summary.totalAssetsEUR}
+            liabilitiesEUR={summary.totalLiabilitiesEUR}
+            isMainCard={true}
+          />
         </div>
 
         {/* Add Account Button */}
@@ -190,12 +209,19 @@ const Index = () => {
           </div>
         )}
 
-        {/* Account Dialog */}
+        {/* Dialogs */}
         <AccountDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           onSave={handleSaveAccount}
           editAccount={editAccount}
+        />
+        
+        <ConversionRateDialog
+          open={ratesDialogOpen}
+          onOpenChange={setRatesDialogOpen}
+          rates={conversionRates}
+          onSave={handleSaveRates}
         />
       </div>
     </div>
