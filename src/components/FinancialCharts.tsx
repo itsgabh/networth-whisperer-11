@@ -1,0 +1,210 @@
+import { Account, Currency, ConversionRate } from '@/types/finance';
+import { Card } from '@/components/ui/card';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { formatCurrency, getCategoryLabel } from '@/lib/currency';
+
+interface FinancialChartsProps {
+  accounts: Account[];
+  conversionRates: ConversionRate[];
+}
+
+const COLORS = {
+  assets: 'hsl(var(--success))',
+  liabilities: 'hsl(var(--destructive))',
+  currentAsset: 'hsl(142, 76%, 45%)',
+  nonCurrentAsset: 'hsl(142, 76%, 30%)',
+  currentLiability: 'hsl(0, 65%, 60%)',
+  nonCurrentLiability: 'hsl(0, 65%, 45%)',
+};
+
+export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsProps) => {
+  const getRateToEUR = (currency: Currency): number => {
+    const rate = conversionRates.find((r) => r.currency === currency);
+    return rate?.rate || 1;
+  };
+
+  // Calculate totals in EUR
+  const totals = accounts.reduce(
+    (acc, account) => {
+      const valueInEUR = account.balance * getRateToEUR(account.currency);
+      const isAsset = account.category.includes('asset');
+      
+      if (isAsset) {
+        acc.totalAssets += valueInEUR;
+        if (account.category === 'current_asset') {
+          acc.currentAssets += valueInEUR;
+        } else {
+          acc.nonCurrentAssets += valueInEUR;
+        }
+      } else {
+        acc.totalLiabilities += valueInEUR;
+        if (account.category === 'current_liability') {
+          acc.currentLiabilities += valueInEUR;
+        } else {
+          acc.nonCurrentLiabilities += valueInEUR;
+        }
+      }
+      return acc;
+    },
+    {
+      totalAssets: 0,
+      totalLiabilities: 0,
+      currentAssets: 0,
+      nonCurrentAssets: 0,
+      currentLiabilities: 0,
+      nonCurrentLiabilities: 0,
+    }
+  );
+
+  // Assets vs Liabilities pie chart data
+  const assetLiabilityData = [
+    { name: 'Assets', value: totals.totalAssets, color: COLORS.assets },
+    { name: 'Liabilities', value: totals.totalLiabilities, color: COLORS.liabilities },
+  ].filter(item => item.value > 0);
+
+  // Category breakdown bar chart data
+  const categoryData = [
+    {
+      name: 'Current Assets',
+      value: totals.currentAssets,
+      color: COLORS.currentAsset,
+    },
+    {
+      name: 'Non-Current Assets',
+      value: totals.nonCurrentAssets,
+      color: COLORS.nonCurrentAsset,
+    },
+    {
+      name: 'Current Liabilities',
+      value: totals.currentLiabilities,
+      color: COLORS.currentLiability,
+    },
+    {
+      name: 'Non-Current Liabilities',
+      value: totals.nonCurrentLiabilities,
+      color: COLORS.nonCurrentLiability,
+    },
+  ].filter(item => item.value > 0);
+
+  // Currency distribution
+  const currencyData = Object.entries(
+    accounts.reduce((acc, account) => {
+      const valueInEUR = account.balance * getRateToEUR(account.currency);
+      if (!acc[account.currency]) {
+        acc[account.currency] = 0;
+      }
+      acc[account.currency] += valueInEUR;
+      return acc;
+    }, {} as Record<string, number>)
+  )
+    .map(([currency, value]) => ({
+      name: currency,
+      value,
+    }))
+    .filter(item => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-medium text-foreground">{payload[0].name}</p>
+          <p className="text-sm text-muted-foreground">
+            {formatCurrency(payload[0].value, 'EUR')}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  if (accounts.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2 mb-8">
+      {/* Assets vs Liabilities */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4 text-foreground">
+          Assets vs Liabilities
+        </h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={assetLiabilityData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              outerRadius={100}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {assetLiabilityData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {/* Category Breakdown */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4 text-foreground">
+          Category Breakdown
+        </h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={categoryData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis 
+              dataKey="name" 
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              angle={-45}
+              textAnchor="end"
+              height={100}
+              fontSize={12}
+            />
+            <YAxis 
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+              {categoryData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {/* Currency Distribution */}
+      {currencyData.length > 1 && (
+        <Card className="p-6 md:col-span-2">
+          <h3 className="text-lg font-semibold mb-4 text-foreground">
+            Currency Distribution (in EUR)
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={currencyData} layout="horizontal">
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                type="number"
+                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+              />
+              <YAxis 
+                type="category"
+                dataKey="name"
+                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+    </div>
+  );
+};

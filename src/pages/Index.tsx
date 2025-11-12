@@ -4,6 +4,7 @@ import { NetWorthCard } from '@/components/NetWorthCard';
 import { AccountList } from '@/components/AccountList';
 import { AccountDialog } from '@/components/AccountDialog';
 import { ConversionRateDialog } from '@/components/ConversionRateDialog';
+import { FinancialCharts } from '@/components/FinancialCharts';
 import { Button } from '@/components/ui/button';
 import { Plus, Wallet, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -147,6 +148,9 @@ const Index = () => {
             isMainCard={true}
           />
         </div>
+
+        {/* Visual Charts */}
+        <FinancialCharts accounts={accounts} conversionRates={conversionRates} />
 
         {/* Add Account Button */}
         <div className="mb-6">
