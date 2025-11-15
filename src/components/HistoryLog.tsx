@@ -1,14 +1,17 @@
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { HistorySnapshot } from '@/types/history';
 import { formatCurrency } from '@/lib/currency';
-import { History, TrendingUp, TrendingDown } from 'lucide-react';
+import { History, TrendingUp, TrendingDown, Trash2, TrashIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface HistoryLogProps {
   snapshots: HistorySnapshot[];
+  onDelete: (id: string) => void;
+  onClearAll: () => void;
 }
 
-export const HistoryLog = ({ snapshots }: HistoryLogProps) => {
+export const HistoryLog = ({ snapshots, onDelete, onClearAll }: HistoryLogProps) => {
   const sortedSnapshots = [...snapshots].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
@@ -19,9 +22,22 @@ export const HistoryLog = ({ snapshots }: HistoryLogProps) => {
 
   return (
     <Card className="p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <History className="h-6 w-6 text-primary" />
-        <h2 className="text-2xl font-bold text-foreground">History Log</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <History className="h-6 w-6 text-primary" />
+          <h2 className="text-2xl font-bold text-foreground">History Log</h2>
+        </div>
+        {sortedSnapshots.length > 0 && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={onClearAll}
+            className="gap-2"
+          >
+            <TrashIcon className="h-4 w-4" />
+            Clear All
+          </Button>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -48,21 +64,31 @@ export const HistoryLog = ({ snapshots }: HistoryLogProps) => {
                     {snapshot.accountCount} accounts
                   </p>
                 </div>
-                {prevSnapshot && change !== 0 && (
-                  <div
-                    className={`flex items-center gap-1 text-sm font-medium ${
-                      change > 0 ? 'text-green-600' : 'text-red-600'
-                    }`}
+                <div className="flex items-center gap-2">
+                  {prevSnapshot && change !== 0 && (
+                    <div
+                      className={`flex items-center gap-1 text-sm font-medium ${
+                        change > 0 ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {change > 0 ? (
+                        <TrendingUp className="h-4 w-4" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4" />
+                      )}
+                      {change > 0 ? '+' : ''}
+                      {formatCurrency(change, 'EUR')} ({changePercent.toFixed(1)}%)
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete(snapshot.id)}
+                    className="h-8 w-8 p-0"
                   >
-                    {change > 0 ? (
-                      <TrendingUp className="h-4 w-4" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4" />
-                    )}
-                    {change > 0 ? '+' : ''}
-                    {formatCurrency(change, 'EUR')} ({changePercent.toFixed(1)}%)
-                  </div>
-                )}
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RetirementInputs, RetirementProjection, RetirementStrategy } from '@/types/retirement';
 import { calculateAllStrategies } from '@/lib/retirementCalculations';
 import { formatCurrency } from '@/lib/currency';
+import { useToast } from '@/hooks/use-toast';
 import { 
   TrendingUp, 
   Coffee, 
@@ -85,6 +86,7 @@ export const RetirementPlanning = ({
   onInputsChange,
   savedInputs,
 }: RetirementPlanningProps) => {
+  const { toast } = useToast();
   const [inputs, setInputs] = useState<RetirementInputs>(savedInputs || {
     currentAge: 30,
     retirementAge: 65,
@@ -108,6 +110,11 @@ export const RetirementPlanning = ({
     const results = calculateAllStrategies(updatedInputs);
     setProjections(results);
     onInputsChange(updatedInputs);
+    
+    toast({
+      title: "Calculations Complete",
+      description: "All retirement strategies have been calculated. Switch to the Strategy Comparison tab to view results.",
+    });
   };
 
   const handleInputChange = (field: keyof RetirementInputs, value: number | string) => {
