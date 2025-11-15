@@ -186,6 +186,22 @@ const Index = () => {
     });
   };
 
+  const deleteSnapshot = (id: string) => {
+    setHistory(history.filter(s => s.id !== id));
+    toast({
+      title: 'Snapshot deleted',
+      description: 'History entry has been removed.',
+    });
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    toast({
+      title: 'History cleared',
+      description: 'All snapshots have been removed.',
+    });
+  };
+
   // Auto-save snapshot when accounts change significantly
   useEffect(() => {
     if (accounts.length > 0 && history.length === 0) {
@@ -284,7 +300,11 @@ const Index = () => {
         {/* History Log */}
         {history.length > 0 && (
           <div className="mt-8">
-            <HistoryLog snapshots={history} />
+          <HistoryLog 
+            snapshots={history}
+            onDelete={deleteSnapshot}
+            onClearAll={clearHistory}
+          />
           </div>
         )}
 
