@@ -203,17 +203,24 @@ export function calculateBaristaFIRE(inputs: RetirementInputs): RetirementProjec
   };
 }
 
-// FINE: Financial Independence, No Early retirement
+// FINE: Financial Independence, Next Endeavor
+// Achieve FI to pursue passion projects, entrepreneurship, or meaningful work
 export function calculateFINE(inputs: RetirementInputs): RetirementProjection {
   const annualExpenses = inputs.monthlyExpenses * MONTHS_PER_YEAR;
-  const targetAmount = annualExpenses / SAFE_WITHDRAWAL_RATE;
+  
+  // Assume next endeavor provides some income (conservative 50% of expenses)
+  const nextEndeavorIncome = annualExpenses * 0.5;
+  const gapToFill = annualExpenses - nextEndeavorIncome;
+  const targetAmount = gapToFill / SAFE_WITHDRAWAL_RATE;
+  
   const monthlyInvestment = (inputs.annualIncome * inputs.savingsRate / 100) / MONTHS_PER_YEAR;
   const years = yearsToTarget(inputs.currentSavings, targetAmount, monthlyInvestment, inputs.expectedReturn / 100);
   
   const notes = [
-    `Achieve FI number: ${(targetAmount / 1000).toFixed(0)}K`,
-    `Continue working because you want to, not because you have to`,
-    `Ultimate financial security and freedom of choice`,
+    `Achieve FINE number: ${(targetAmount / 1000).toFixed(0)}K (assuming ${(nextEndeavorIncome / 1000).toFixed(0)}K from passion work)`,
+    `Pursue your next endeavor: startup, consulting, creative work, or passion project`,
+    `Financial security while building something meaningful`,
+    `Lower target than Full FIRE by leveraging meaningful income`,
   ];
   
   return {
@@ -223,7 +230,7 @@ export function calculateFINE(inputs: RetirementInputs): RetirementProjection {
     monthlyInvestment,
     retirementAge: inputs.currentAge + years,
     projectedAnnualExpenses: annualExpenses,
-    safeWithdrawalAmount: targetAmount * SAFE_WITHDRAWAL_RATE,
+    safeWithdrawalAmount: targetAmount * SAFE_WITHDRAWAL_RATE + nextEndeavorIncome,
     isFeasible: years < 100 && years > 0,
     notes,
   };

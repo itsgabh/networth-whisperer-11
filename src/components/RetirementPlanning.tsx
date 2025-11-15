@@ -69,7 +69,7 @@ const strategyConfig: Record<RetirementStrategy, {
   fine: {
     icon: Heart,
     title: 'FINE',
-    description: 'Financial Independence, No Early retirement - work by choice',
+    description: 'Financial Independence, Next Endeavor - pursue passion projects and meaningful work',
     color: 'text-pink-600',
   },
   traditional: {
