@@ -20,7 +20,10 @@ import {
   Calculator,
   CheckCircle2,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -104,6 +107,10 @@ export const RetirementPlanning = ({
   });
 
   const [projections, setProjections] = useState<Record<RetirementStrategy, RetirementProjection> | null>(null);
+  
+  type SortColumn = 'targetAmount' | 'yearsToTarget' | 'retirementAge' | 'monthlyInvestment' | 'annualIncome';
+  const [sortColumn, setSortColumn] = useState<SortColumn>('yearsToTarget');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const handleCalculate = () => {
     const updatedInputs = { ...inputs, currentSavings: liquidNetWorthEUR };
@@ -120,6 +127,59 @@ export const RetirementPlanning = ({
 
   const handleInputChange = (field: keyof RetirementInputs, value: number | string) => {
     setInputs(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedStrategies = (): RetirementStrategy[] => {
+    if (!projections) return [];
+    
+    const strategies = Object.keys(strategyConfig) as RetirementStrategy[];
+    
+    return strategies.sort((a, b) => {
+      const projA = projections[a];
+      const projB = projections[b];
+      
+      let comparison = 0;
+      
+      switch (sortColumn) {
+        case 'targetAmount':
+          comparison = projA.targetAmount - projB.targetAmount;
+          break;
+        case 'yearsToTarget':
+          comparison = projA.yearsToTarget - projB.yearsToTarget;
+          break;
+        case 'retirementAge':
+          comparison = projA.retirementAge - projB.retirementAge;
+          break;
+        case 'monthlyInvestment':
+          comparison = projA.monthlyInvestment - projB.monthlyInvestment;
+          break;
+        case 'annualIncome':
+          comparison = projA.safeWithdrawalAmount - projB.safeWithdrawalAmount;
+          break;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  };
+
+  const SortIcon = ({ column }: { column: SortColumn }) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 inline opacity-50" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1 inline" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1 inline" />
+    );
   };
 
   const renderProjectionCard = (strategy: RetirementStrategy, projection: RetirementProjection) => {
@@ -328,16 +388,46 @@ export const RetirementPlanning = ({
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px]">Strategy</TableHead>
-                    <TableHead className="text-right">Target Amount</TableHead>
-                    <TableHead className="text-right">Years to Target</TableHead>
-                    <TableHead className="text-right">Retirement Age</TableHead>
-                    <TableHead className="text-right">Monthly Investment</TableHead>
-                    <TableHead className="text-right">Annual Income</TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('targetAmount')}
+                    >
+                      Target Amount
+                      <SortIcon column="targetAmount" />
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('yearsToTarget')}
+                    >
+                      Years to Target
+                      <SortIcon column="yearsToTarget" />
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('retirementAge')}
+                    >
+                      Retirement Age
+                      <SortIcon column="retirementAge" />
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('monthlyInvestment')}
+                    >
+                      Monthly Investment
+                      <SortIcon column="monthlyInvestment" />
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('annualIncome')}
+                    >
+                      Annual Income
+                      <SortIcon column="annualIncome" />
+                    </TableHead>
                     <TableHead className="text-center">Feasible</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(Object.keys(strategyConfig) as RetirementStrategy[]).map((strategy) => {
+                  {getSortedStrategies().map((strategy) => {
                     const projection = projections[strategy];
                     const config = strategyConfig[strategy];
                     const Icon = config.icon;
