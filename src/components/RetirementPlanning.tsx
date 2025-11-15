@@ -22,6 +22,7 @@ import {
   XCircle,
   AlertTriangle
 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface RetirementPlanningProps {
   liquidNetWorthEUR: number;
@@ -322,13 +323,94 @@ export const RetirementPlanning = ({
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-6">
-                {(Object.keys(strategyConfig) as RetirementStrategy[]).map((strategy) => (
-                  <div key={strategy}>
-                    {renderProjectionCard(strategy, projections[strategy])}
-                  </div>
-                ))}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[200px]">Strategy</TableHead>
+                    <TableHead className="text-right">Target Amount</TableHead>
+                    <TableHead className="text-right">Years to Target</TableHead>
+                    <TableHead className="text-right">Retirement Age</TableHead>
+                    <TableHead className="text-right">Monthly Investment</TableHead>
+                    <TableHead className="text-right">Annual Income</TableHead>
+                    <TableHead className="text-center">Feasible</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(Object.keys(strategyConfig) as RetirementStrategy[]).map((strategy) => {
+                    const projection = projections[strategy];
+                    const config = strategyConfig[strategy];
+                    const Icon = config.icon;
+                    const yearsRounded = Math.ceil(projection.yearsToTarget);
+                    const isFeasible = projection.isFeasible;
+
+                    return (
+                      <TableRow key={strategy} className="hover:bg-muted/50">
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Icon className={`h-5 w-5 ${config.color}`} />
+                            <div>
+                              <div className="font-semibold text-foreground">{config.title}</div>
+                              <div className="text-xs text-muted-foreground">{config.description}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(projection.targetAmount, 'EUR')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-semibold text-primary">
+                            {yearsRounded < 100 ? `${yearsRounded} years` : '100+ years'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {projection.retirementAge.toFixed(0)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(projection.monthlyInvestment, 'EUR')}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-primary">
+                          {formatCurrency(projection.safeWithdrawalAmount, 'EUR')}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {isFeasible ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-600 inline" />
+                          ) : yearsRounded > 50 ? (
+                            <AlertTriangle className="h-5 w-5 text-yellow-600 inline" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600 inline" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+              
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">Strategy Notes</h3>
+                {(Object.keys(strategyConfig) as RetirementStrategy[]).map((strategy) => {
+                  const projection = projections[strategy];
+                  const config = strategyConfig[strategy];
+                  const Icon = config.icon;
+
+                  return (
+                    <Card key={`notes-${strategy}`} className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon className={`h-5 w-5 ${config.color}`} />
+                        <h4 className="font-semibold text-foreground">{config.title}</h4>
+                      </div>
+                      <ul className="space-y-1 ml-7">
+                        {projection.notes.map((note, index) => (
+                          <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                            <span>{note}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}
