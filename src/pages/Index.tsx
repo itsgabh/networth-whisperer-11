@@ -17,6 +17,12 @@ import { useToast } from '@/hooks/use-toast';
 import { defaultConversionRates } from '@/lib/currency';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
+const getRateToEUR = (currency: Currency, conversionRates: ConversionRate[]): number => {
+  if (currency === 'EUR') return 1;
+  const rate = conversionRates.find((r) => r.currency === currency);
+  return rate?.rate ?? 0;
+};
+
 const Index = () => {
   const [accounts, setAccounts] = useLocalStorage<Account[]>('networth-accounts', []);
   const [conversionRates, setConversionRates] = useLocalStorage<ConversionRate[]>(
@@ -40,7 +46,11 @@ const Index = () => {
   const { toast } = useToast();
 
   const summary: NetWorthSummary = useMemo(() => {
-    const currencies: Currency[] = ['EUR', 'USD', 'GBP', 'PHP'];
+    const usedCurrencies = Array.from(new Set<Currency>(accounts.map(a => a.currency)));
+    const currencies: Currency[] = usedCurrencies.includes('EUR')
+      ? usedCurrencies
+      : (['EUR', ...usedCurrencies] as Currency[]);
+    
     const result: NetWorthSummary = {
       totalAssets: {} as Record<Currency, number>,
       totalLiabilities: {} as Record<Currency, number>,
@@ -48,11 +58,6 @@ const Index = () => {
       totalAssetsEUR: 0,
       totalLiabilitiesEUR: 0,
       netWorthEUR: 0,
-    };
-
-    const getRateToEUR = (currency: Currency): number => {
-      const rate = conversionRates.find((r) => r.currency === currency);
-      return rate?.rate || 1;
     };
 
     currencies.forEach((currency) => {
@@ -69,7 +74,7 @@ const Index = () => {
       result.netWorth[currency] = assets - liabilities;
 
       // Convert to EUR
-      const rate = getRateToEUR(currency);
+      const rate = getRateToEUR(currency, conversionRates);
       result.totalAssetsEUR += assets * rate;
       result.totalLiabilitiesEUR += liabilities * rate;
     });
@@ -80,18 +85,13 @@ const Index = () => {
   }, [accounts, conversionRates]);
 
   const liquidNetWorth = useMemo(() => {
-    const getRateToEUR = (currency: Currency): number => {
-      const rate = conversionRates.find((r) => r.currency === currency);
-      return rate?.rate || 1;
-    };
-
     const currentAssets = accounts
       .filter((acc) => acc.category === 'current_asset')
-      .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency), 0);
+      .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency, conversionRates), 0);
 
     const currentLiabilities = accounts
       .filter((acc) => acc.category === 'current_liability')
-      .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency), 0);
+      .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency, conversionRates), 0);
 
     return currentAssets - currentLiabilities;
   }, [accounts, conversionRates]);
@@ -179,7 +179,7 @@ const Index = () => {
       liquidNetWorthEUR: liquidNetWorth,
       accountCount: accounts.length,
     };
-    setHistory([...history, snapshot]);
+    setHistory((prev) => [...prev, snapshot]);
     toast({
       title: 'Snapshot saved',
       description: 'Your current financial state has been recorded in history.',
@@ -187,7 +187,7 @@ const Index = () => {
   };
 
   const deleteSnapshot = (id: string) => {
-    setHistory(history.filter(s => s.id !== id));
+    setHistory((prev) => prev.filter((s) => s.id !== id));
     toast({
       title: 'Snapshot deleted',
       description: 'History entry has been removed.',
@@ -195,7 +195,7 @@ const Index = () => {
   };
 
   const clearHistory = () => {
-    setHistory([]);
+    setHistory(() => []);
     toast({
       title: 'History cleared',
       description: 'All snapshots have been removed.',
@@ -238,6 +238,7 @@ const Index = () => {
               <Button
                 variant="outline"
                 onClick={saveSnapshot}
+                disabled={accounts.length === 0}
                 className="gap-2"
               >
                 <Save className="h-4 w-4" />
@@ -263,6 +264,24 @@ const Index = () => {
             isMainCard={true}
           />
         </div>
+
+        {/* Multi-Currency Net Worth Strip */}
+        {accounts.length > 0 && (
+          <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {Object.entries(summary.netWorth).map(([currency, amount]) => (
+              amount !== 0 && (
+                <div key={currency} className="rounded-lg border border-border bg-card p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">{currency}</span>
+                    <span className={`text-sm font-semibold ${amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                </div>
+              )
+            ))}
+          </div>
+        )}
 
         {/* View Controls */}
         <div className="mb-8">
