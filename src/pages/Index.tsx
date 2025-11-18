@@ -6,6 +6,7 @@ import { NetWorthCard } from '@/components/NetWorthCard';
 import { AccountList } from '@/components/AccountList';
 import { AccountDialog } from '@/components/AccountDialog';
 import { ConversionRateDialog } from '@/components/ConversionRateDialog';
+import { ImportPreviewDialog } from '@/components/ImportPreviewDialog';
 import { FinancialCharts } from '@/components/FinancialCharts';
 import { RetirementPlanning } from '@/components/RetirementPlanning';
 import { HistoryLog } from '@/components/HistoryLog';
@@ -43,6 +44,9 @@ const Index = () => {
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [ratesDialogOpen, setRatesDialogOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [importPreviewOpen, setImportPreviewOpen] = useState(false);
+  const [importPreviewData, setImportPreviewData] = useState<any>(null);
+  const [pendingImportData, setPendingImportData] = useState<any>(null);
   const { toast } = useToast();
 
   const summary: NetWorthSummary = useMemo(() => {
@@ -229,6 +233,7 @@ const Index = () => {
 
   const handleExportData = () => {
     const backupData = {
+      schemaVersion: 1,
       accounts,
       conversionRates,
       history,
@@ -268,30 +273,84 @@ const Index = () => {
           throw new Error('Invalid backup file format');
         }
 
-        // Restore data
-        if (data.accounts) setAccounts(data.accounts);
-        if (data.conversionRates) setConversionRates(data.conversionRates);
-        if (data.history) setHistory(data.history);
-        if (data.monthlyExpenses !== undefined) setMonthlyExpenses(data.monthlyExpenses);
-        if (data.retirementInputs !== undefined) setRetirementInputs(data.retirementInputs);
-        if (data.showCurrentAssets !== undefined) setShowCurrentAssets(data.showCurrentAssets);
-        if (data.showNonCurrentAssets !== undefined) setShowNonCurrentAssets(data.showNonCurrentAssets);
-        if (data.showCurrentLiabilities !== undefined) setShowCurrentLiabilities(data.showCurrentLiabilities);
-        if (data.showNonCurrentLiabilities !== undefined) setShowNonCurrentLiabilities(data.showNonCurrentLiabilities);
+        // Validate required fields
+        if (!Array.isArray(data.accounts)) {
+          throw new Error('Invalid backup: accounts array missing');
+        }
+        if (!Array.isArray(data.conversionRates)) {
+          throw new Error('Invalid backup: conversionRates array missing');
+        }
+        if (!Array.isArray(data.history)) {
+          throw new Error('Invalid backup: history array missing');
+        }
 
-        toast({
-          title: 'Data imported',
-          description: 'Your backup has been restored successfully.',
-        });
+        // Extract currencies from accounts
+        const currencies = Array.from(
+          new Set(data.accounts.map((acc: Account) => acc.currency))
+        ).sort();
+
+        // Prepare preview data
+        const previewData = {
+          schemaVersion: data.schemaVersion,
+          accountCount: data.accounts.length,
+          snapshotCount: data.history.length,
+          currencies,
+          hasMonthlyExpenses: data.monthlyExpenses !== undefined,
+          hasRetirementInputs: data.retirementInputs !== undefined,
+        };
+
+        // Store data for import after confirmation
+        setPendingImportData(data);
+        setImportPreviewData(previewData);
+        setImportPreviewOpen(true);
       } catch (error) {
         toast({
           title: 'Import failed',
-          description: 'Unable to read backup file. Please check the file format.',
+          description: error instanceof Error ? error.message : 'Unable to read backup file.',
           variant: 'destructive',
         });
       }
     };
     reader.readAsText(file);
+  };
+
+  const confirmImport = () => {
+    if (!pendingImportData) return;
+
+    try {
+      const data = pendingImportData;
+
+      // Restore data
+      if (data.accounts) setAccounts(data.accounts);
+      if (data.conversionRates) setConversionRates(data.conversionRates);
+      if (data.history) setHistory(data.history);
+      if (data.monthlyExpenses !== undefined) setMonthlyExpenses(data.monthlyExpenses);
+      if (data.retirementInputs !== undefined) setRetirementInputs(data.retirementInputs);
+      if (data.showCurrentAssets !== undefined) setShowCurrentAssets(data.showCurrentAssets);
+      if (data.showNonCurrentAssets !== undefined) setShowNonCurrentAssets(data.showNonCurrentAssets);
+      if (data.showCurrentLiabilities !== undefined) setShowCurrentLiabilities(data.showCurrentLiabilities);
+      if (data.showNonCurrentLiabilities !== undefined) setShowNonCurrentLiabilities(data.showNonCurrentLiabilities);
+
+      // Clear pending data
+      setPendingImportData(null);
+      setImportPreviewData(null);
+
+      toast({
+        title: 'Data imported',
+        description: 'Your backup has been restored successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Import failed',
+        description: 'An error occurred while importing data.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const cancelImport = () => {
+    setPendingImportData(null);
+    setImportPreviewData(null);
   };
 
   const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -600,6 +659,14 @@ const Index = () => {
           onOpenChange={setRatesDialogOpen}
           rates={conversionRates}
           onSave={handleSaveRates}
+        />
+
+        <ImportPreviewDialog
+          open={importPreviewOpen}
+          onOpenChange={setImportPreviewOpen}
+          previewData={importPreviewData}
+          onConfirm={confirmImport}
+          onCancel={cancelImport}
         />
       </div>
     </div>
