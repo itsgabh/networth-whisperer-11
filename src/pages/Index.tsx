@@ -655,49 +655,15 @@ const Index = () => {
 
         {/* Account Lists */}
         {accounts.length > 0 ? (
-          <div className="space-y-4 sm:space-y-6">
-            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-              <div className="space-y-4 sm:space-y-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground">Assets</h2>
-                {showCurrentAssets && (
-                  <AccountList
-                    accounts={accounts}
-                    category="current_asset"
-                    onEdit={handleEditAccount}
-                    onDelete={handleDeleteAccount}
-                  />
-                )}
-                {showNonCurrentAssets && (
-                  <AccountList
-                    accounts={accounts}
-                    category="non_current_asset"
-                    onEdit={handleEditAccount}
-                    onDelete={handleDeleteAccount}
-                  />
-                )}
-              </div>
-
-              <div className="space-y-4 sm:space-y-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground">Liabilities</h2>
-                {showCurrentLiabilities && (
-                  <AccountList
-                    accounts={accounts}
-                    category="current_liability"
-                    onEdit={handleEditAccount}
-                    onDelete={handleDeleteAccount}
-                  />
-                )}
-                {showNonCurrentLiabilities && (
-                  <AccountList
-                    accounts={accounts}
-                    category="non_current_liability"
-                    onEdit={handleEditAccount}
-                    onDelete={handleDeleteAccount}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+          <AccountList
+            accounts={accounts}
+            onEdit={handleEditAccount}
+            onDelete={handleDeleteAccount}
+            showCurrentAssets={showCurrentAssets}
+            showNonCurrentAssets={showNonCurrentAssets}
+            showCurrentLiabilities={showCurrentLiabilities}
+            showNonCurrentLiabilities={showNonCurrentLiabilities}
+          />
         ) : (
           <div className="text-center py-12 sm:py-16">
             <Wallet className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-muted-foreground mb-4" />

@@ -1,7 +1,8 @@
 import { Account, Currency, ConversionRate } from '@/types/finance';
 import { Card } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { formatCurrency, getCategoryLabel } from '@/lib/currency';
+import { formatCurrency } from '@/lib/currency';
+import { ACCOUNT_CATEGORY_META } from '@/lib/accountMetadata';
 
 interface FinancialChartsProps {
   accounts: Account[];
@@ -65,22 +66,22 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
   // Category breakdown bar chart data
   const categoryData = [
     {
-      name: 'Current Assets',
+      name: ACCOUNT_CATEGORY_META.current_asset.label,
       value: totals.currentAssets,
       color: COLORS.currentAsset,
     },
     {
-      name: 'Non-Current Assets',
+      name: ACCOUNT_CATEGORY_META.non_current_asset.label,
       value: totals.nonCurrentAssets,
       color: COLORS.nonCurrentAsset,
     },
     {
-      name: 'Current Liabilities',
+      name: ACCOUNT_CATEGORY_META.current_liability.label,
       value: totals.currentLiabilities,
       color: COLORS.currentLiability,
     },
     {
-      name: 'Non-Current Liabilities',
+      name: ACCOUNT_CATEGORY_META.non_current_liability.label,
       value: totals.nonCurrentLiabilities,
       color: COLORS.nonCurrentLiability,
     },
