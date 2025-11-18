@@ -23,13 +23,3 @@ export const formatCurrency = (amount: number, currency: Currency): string => {
   });
   return `${symbol}${formatted}`;
 };
-
-export const getCategoryLabel = (category: string): string => {
-  const labels: Record<string, string> = {
-    current_asset: 'Current Assets',
-    non_current_asset: 'Non-Current Assets',
-    current_liability: 'Current Liabilities',
-    non_current_liability: 'Non-Current Liabilities',
-  };
-  return labels[category] || category;
-};
