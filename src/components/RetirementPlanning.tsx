@@ -118,6 +118,13 @@ export const RetirementPlanning = ({
   const [multiplier, setMultiplier] = useState<number>(25);
   const [projectionMode, setProjectionMode] = useState<'all' | 'retirement'>('all');
 
+  // FI target profiles
+  const fiProfiles = [
+    { name: 'Lean FI', desiredMonthlySpending: 2000, multiplier: 25, color: 'text-green-600' },
+    { name: 'Comfort FI', desiredMonthlySpending: 3500, multiplier: 25, color: 'text-blue-600' },
+    { name: 'Rich FI', desiredMonthlySpending: 6000, multiplier: 25, color: 'text-purple-600' },
+  ];
+
   const [projections, setProjections] = useState<Record<RetirementStrategy, RetirementProjection> | null>(null);
   
   type SortColumn = 'targetAmount' | 'yearsToTarget' | 'retirementAge' | 'monthlyInvestment' | 'annualIncome';
@@ -311,57 +318,48 @@ export const RetirementPlanning = ({
       <Card className="p-4 mb-6 bg-muted/30">
         <div className="flex items-center gap-2 mb-4">
           <Target className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">FIRE Progress</h3>
+          <h3 className="text-lg font-semibold text-foreground">FIRE Target Profiles</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <Label>Desired Monthly Spending (EUR)</Label>
-            <Input
-              type="number"
-              value={desiredMonthlySpending}
-              onChange={(e) => setDesiredMonthlySpending(Number(e.target.value))}
-              min={0}
-            />
-          </div>
-          <div>
-            <Label>Multiplier (4% rule = 25)</Label>
-            <Input
-              type="number"
-              value={multiplier}
-              onChange={(e) => setMultiplier(Number(e.target.value))}
-              min={1}
-            />
-          </div>
+        <div className="space-y-6">
+          {fiProfiles.map((profile) => {
+            const fireNumber = profile.desiredMonthlySpending * 12 * profile.multiplier;
+            const currentPortfolio = liquidAssetsEUR + retirementAssetsEUR;
+            const progressPercent = Math.min((currentPortfolio / fireNumber) * 100, 100);
+
+            return (
+              <div key={profile.name} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className={`font-semibold ${profile.color}`}>{profile.name}</h4>
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(profile.desiredMonthlySpending, 'EUR')}/month · Target: {formatCurrency(fireNumber, 'EUR')}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-foreground">
+                      {progressPercent.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(currentPortfolio, 'EUR')}
+                    </p>
+                  </div>
+                </div>
+                <Progress value={progressPercent} className="h-2" />
+              </div>
+            );
+          })}
         </div>
 
-        {desiredMonthlySpending > 0 && multiplier > 0 && (
-          <>
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Your FIRE number:</span>
-                <span className="font-semibold text-foreground">
-                  {formatCurrency(desiredMonthlySpending * 12 * multiplier, 'EUR')}
-                </span>
-              </div>
-              <Progress 
-                value={Math.min(((liquidAssetsEUR + retirementAssetsEUR) / (desiredMonthlySpending * 12 * multiplier)) * 100, 100)} 
-                className="h-3"
-              />
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Progress:</span>
-                <span className="font-semibold text-primary">
-                  {(((liquidAssetsEUR + retirementAssetsEUR) / (desiredMonthlySpending * 12 * multiplier)) * 100).toFixed(1)}%
-                </span>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              You have reached <span className="font-semibold text-foreground">
-                {(((liquidAssetsEUR + retirementAssetsEUR) / (desiredMonthlySpending * 12 * multiplier)) * 100).toFixed(1)}%
-              </span> of your FIRE target.
-            </p>
-          </>
-        )}
+        <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+          <p className="text-xs text-muted-foreground">
+            <strong>Lean FI:</strong> Minimal expenses, frugal lifestyle
+            <br />
+            <strong>Comfort FI:</strong> Moderate spending, balanced lifestyle
+            <br />
+            <strong>Rich FI:</strong> Generous budget, premium lifestyle
+          </p>
+        </div>
       </Card>
 
       {/* Portfolio Projection Chart */}
