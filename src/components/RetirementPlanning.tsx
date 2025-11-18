@@ -26,9 +26,10 @@ import {
   Sparkles,
   RotateCcw
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface RetirementPlanningProps {
   liquidNetWorthEUR: number;
@@ -303,7 +304,7 @@ export const RetirementPlanning = ({
               tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
               label={{ value: 'Portfolio Value', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
             />
-            <Tooltip
+            <RechartsTooltip
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
@@ -514,7 +515,8 @@ export const RetirementPlanning = ({
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <TooltipProvider>
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px]">Strategy</TableHead>
@@ -594,11 +596,32 @@ export const RetirementPlanning = ({
                         </TableCell>
                         <TableCell className="text-center">
                           {isFeasible ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-600 inline" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <CheckCircle2 className="h-5 w-5 text-green-600 inline cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Achievable within your lifetime ({yearsRounded} years)</p>
+                              </TooltipContent>
+                            </Tooltip>
                           ) : yearsRounded > 50 ? (
-                            <AlertTriangle className="h-5 w-5 text-yellow-600 inline" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertTriangle className="h-5 w-5 text-yellow-600 inline cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Very long timeframe ({yearsRounded} years) - consider adjusting your strategy</p>
+                              </TooltipContent>
+                            </Tooltip>
                           ) : (
-                            <XCircle className="h-5 w-5 text-red-600 inline" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <XCircle className="h-5 w-5 text-red-600 inline cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Not feasible with current inputs - increase savings rate or reduce expenses</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                         </TableCell>
                       </TableRow>
@@ -606,6 +629,7 @@ export const RetirementPlanning = ({
                   })}
                 </TableBody>
               </Table>
+              </TooltipProvider>
             </div>
           )}
         </TabsContent>
