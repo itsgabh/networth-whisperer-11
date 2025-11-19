@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RetirementInputs, RetirementProjection, RetirementStrategy } from '@/types/retirement';
+import { Currency } from '@/types/finance';
 import { calculateAllStrategies } from '@/lib/retirementCalculations';
-import { formatCurrency } from '@/lib/currency';
+import { formatCurrency, currencySymbols } from '@/lib/currency';
 import { useToast } from '@/hooks/use-toast';
 import { 
   TrendingUp, 
@@ -36,6 +37,7 @@ interface RetirementPlanningProps {
   monthlyExpenses: number;
   onInputsChange: (inputs: RetirementInputs) => void;
   savedInputs?: RetirementInputs;
+  displayCurrency?: Currency;
 }
 
 const strategyConfig: Record<RetirementStrategy, { 
@@ -83,6 +85,7 @@ export const RetirementPlanning = ({
   monthlyExpenses,
   onInputsChange,
   savedInputs,
+  displayCurrency = 'EUR',
 }: RetirementPlanningProps) => {
   const { toast } = useToast();
   const [inputs, setInputs] = useState<RetirementInputs>(savedInputs || {
@@ -288,10 +291,11 @@ export const RetirementPlanning = ({
               stroke="hsl(var(--muted-foreground))"
               tick={{ fontSize: 12 }}
               tickFormatter={(value) => {
-                if (value >= 1000000000) return `€${(value / 1000000000).toFixed(1)}B`;
-                if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`;
-                if (value >= 1000) return `€${(value / 1000).toFixed(0)}K`;
-                return `€${value}`;
+                const symbol = currencySymbols[displayCurrency];
+                if (value >= 1000000000) return `${symbol}${(value / 1000000000).toFixed(1)}B`;
+                if (value >= 1000000) return `${symbol}${(value / 1000000).toFixed(1)}M`;
+                if (value >= 1000) return `${symbol}${(value / 1000).toFixed(0)}K`;
+                return `${symbol}${value}`;
               }}
               label={{ value: 'Portfolio Value', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
             />
@@ -302,7 +306,7 @@ export const RetirementPlanning = ({
                 borderRadius: '8px',
               }}
               formatter={(value: number, name: string) => [
-                formatCurrency(value, 'EUR'), 
+                formatCurrency(value, displayCurrency), 
                 name === 'pessimistic' ? `Pessimistic (${pessimisticRate}%)` :
                 name === 'realistic' ? `Realistic (${inputs.expectedReturn}%)` : 
                 `Optimistic (${optimisticRate}%)`
@@ -362,7 +366,7 @@ export const RetirementPlanning = ({
               <span className="font-semibold text-red-900 dark:text-red-100 text-sm">Pessimistic ({pessimisticRate}%)</span>
             </div>
             <p className="text-red-700 dark:text-red-300 text-xs font-medium">
-              At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.pessimistic || 0, 'EUR')}
+              At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.pessimistic || 0, displayCurrency)}
             </p>
             <p className="text-red-600 dark:text-red-400 text-xs mt-1">Bear market conditions</p>
           </div>
@@ -374,7 +378,7 @@ export const RetirementPlanning = ({
               <span className="font-semibold text-foreground text-sm">Realistic ({inputs.expectedReturn}%)</span>
             </div>
             <p className="text-foreground text-xs font-medium">
-              At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.realistic || 0, 'EUR')}
+              At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.realistic || 0, displayCurrency)}
             </p>
             <p className="text-muted-foreground text-xs mt-1">Conservative long-term average</p>
           </div>
@@ -386,15 +390,15 @@ export const RetirementPlanning = ({
               <span className="font-semibold text-green-900 dark:text-green-100 text-sm">Optimistic ({optimisticRate}%)</span>
             </div>
             <p className="text-green-700 dark:text-green-300 text-xs font-medium">
-              At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.optimistic || 0, 'EUR')}
+              At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.optimistic || 0, displayCurrency)}
             </p>
             <p className="text-green-600 dark:text-green-400 text-xs mt-1">Strong bull market conditions</p>
           </div>
         </div>
         
         <div className="mt-3 text-xs text-muted-foreground space-y-1">
-          <p>• Starting Portfolio: {formatCurrency(projectionData[0]?.realistic || 0, 'EUR')}</p>
-          <p>• Monthly Contribution: {formatCurrency((inputs.annualIncome * inputs.savingsRate / 100) / 12, 'EUR')}</p>
+          <p>• Starting Portfolio: {formatCurrency(projectionData[0]?.realistic || 0, displayCurrency)}</p>
+          <p>• Monthly Contribution: {formatCurrency((inputs.annualIncome * inputs.savingsRate / 100) / 12, displayCurrency)}</p>
         </div>
       </Card>
 
@@ -423,7 +427,7 @@ export const RetirementPlanning = ({
               />
             </div>
             <div>
-              <Label>Current Savings (EUR)</Label>
+              <Label>Current Savings ({displayCurrency})</Label>
               <Input
                 type="number"
                 value={liquidNetWorthEUR.toFixed(0)}
@@ -433,7 +437,7 @@ export const RetirementPlanning = ({
               <p className="text-xs text-muted-foreground mt-1">Auto-filled from liquid net worth</p>
             </div>
             <div>
-              <Label>Monthly Expenses (EUR)</Label>
+              <Label>Monthly Expenses ({displayCurrency})</Label>
               <Input
                 type="number"
                 value={inputs.monthlyExpenses}
@@ -441,7 +445,7 @@ export const RetirementPlanning = ({
               />
             </div>
             <div>
-              <Label>Annual Income (EUR)</Label>
+              <Label>Annual Income ({displayCurrency})</Label>
               <Input
                 type="number"
                 value={inputs.annualIncome}
@@ -502,7 +506,7 @@ export const RetirementPlanning = ({
               />
             </div>
             <div>
-              <Label>Part-Time Income (EUR/month)</Label>
+              <Label>Part-Time Income ({displayCurrency}/month)</Label>
               <Input
                 type="number"
                 value={inputs.partTimeIncome}
@@ -519,7 +523,7 @@ export const RetirementPlanning = ({
               />
             </div>
             <div>
-              <Label>Est. Social Security (EUR/month)</Label>
+              <Label>Est. Social Security ({displayCurrency}/month)</Label>
               <Input
                 type="number"
                 value={inputs.estimatedSocialSecurity}
@@ -610,7 +614,7 @@ export const RetirementPlanning = ({
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {formatCurrency(projection.targetAmount, 'EUR')}
+                          {formatCurrency(projection.targetAmount, displayCurrency)}
                         </TableCell>
                         <TableCell className="text-right">
                           <span className="font-semibold text-primary">
@@ -621,10 +625,10 @@ export const RetirementPlanning = ({
                           {projection.retirementAge.toFixed(0)}
                         </TableCell>
                         <TableCell className="text-right">
-                          {formatCurrency(projection.monthlyInvestment, 'EUR')}
+                          {formatCurrency(projection.monthlyInvestment, displayCurrency)}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-primary">
-                          {formatCurrency(projection.safeWithdrawalAmount, 'EUR')}
+                          {formatCurrency(projection.safeWithdrawalAmount, displayCurrency)}
                         </TableCell>
                         <TableCell className="text-center">
                           {isFeasible ? (

@@ -7,6 +7,7 @@ import { ACCOUNT_CATEGORY_META } from '@/lib/accountMetadata';
 interface FinancialChartsProps {
   accounts: Account[];
   conversionRates: ConversionRate[];
+  displayCurrency?: Currency;
 }
 
 const COLORS = {
@@ -18,7 +19,14 @@ const COLORS = {
   nonCurrentLiability: 'hsl(0, 65%, 45%)',
 };
 
-export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsProps) => {
+const convertFromEURTo = (amountEUR: number, targetCurrency: Currency, conversionRates: ConversionRate[]): number => {
+  if (targetCurrency === 'EUR') return amountEUR;
+  const rate = conversionRates.find((r) => r.currency === targetCurrency);
+  if (!rate || rate.rate === 0) return amountEUR;
+  return amountEUR / rate.rate;
+};
+
+export const FinancialCharts = ({ accounts, conversionRates, displayCurrency = 'EUR' }: FinancialChartsProps) => {
   const getRateToEUR = (currency: Currency): number => {
     const rate = conversionRates.find((r) => r.currency === currency);
     return rate?.rate || 1;
@@ -93,7 +101,7 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium text-foreground">{payload[0].name}</p>
           <p className="text-sm text-muted-foreground">
-            {formatCurrency(payload[0].value, 'EUR')}
+            {formatCurrency(convertFromEURTo(payload[0].value, displayCurrency, conversionRates), displayCurrency)}
           </p>
         </div>
       );
