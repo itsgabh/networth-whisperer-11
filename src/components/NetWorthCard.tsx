@@ -1,14 +1,16 @@
 import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/currency';
 import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { Currency } from '@/types/finance';
 
 interface NetWorthCardProps {
   assetsEUR: number;
   liabilitiesEUR: number;
   isMainCard?: boolean;
+  displayCurrency?: Currency;
 }
 
-export const NetWorthCard = ({ assetsEUR, liabilitiesEUR, isMainCard = false }: NetWorthCardProps) => {
+export const NetWorthCard = ({ assetsEUR, liabilitiesEUR, isMainCard = false, displayCurrency = 'EUR' }: NetWorthCardProps) => {
   const netWorth = assetsEUR - liabilitiesEUR;
   const isPositive = netWorth >= 0;
 
@@ -19,7 +21,7 @@ export const NetWorthCard = ({ assetsEUR, liabilitiesEUR, isMainCard = false }: 
           <div className="flex items-center gap-2">
             {isMainCard && <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />}
             <h3 className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              {isMainCard ? 'Total Net Worth (EUR)' : 'Net Worth (EUR)'}
+              {isMainCard ? `Total Net Worth (${displayCurrency})` : `Net Worth (${displayCurrency})`}
             </h3>
           </div>
           {isPositive ? (
@@ -31,7 +33,7 @@ export const NetWorthCard = ({ assetsEUR, liabilitiesEUR, isMainCard = false }: 
         
         <div>
           <p className={`${isMainCard ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-2xl sm:text-3xl lg:text-4xl'} font-bold ${isPositive ? 'text-success' : 'text-destructive'}`}>
-            {formatCurrency(netWorth, 'EUR')}
+            {formatCurrency(netWorth, displayCurrency)}
           </p>
         </div>
 
@@ -39,13 +41,13 @@ export const NetWorthCard = ({ assetsEUR, liabilitiesEUR, isMainCard = false }: 
           <div>
             <p className="text-xs text-muted-foreground mb-1">Total Assets</p>
             <p className={`${isMainCard ? 'text-base sm:text-lg lg:text-xl' : 'text-sm sm:text-base lg:text-lg'} font-semibold text-foreground`}>
-              {formatCurrency(assetsEUR, 'EUR')}
+              {formatCurrency(assetsEUR, displayCurrency)}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Total Liabilities</p>
             <p className={`${isMainCard ? 'text-base sm:text-lg lg:text-xl' : 'text-sm sm:text-base lg:text-lg'} font-semibold text-foreground`}>
-              {formatCurrency(liabilitiesEUR, 'EUR')}
+              {formatCurrency(liabilitiesEUR, displayCurrency)}
             </p>
           </div>
         </div>

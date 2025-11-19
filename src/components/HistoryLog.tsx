@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { HistorySnapshot } from '@/types/history';
+import { Currency, ConversionRate } from '@/types/finance';
 import { formatCurrency } from '@/lib/currency';
 import { History, TrendingUp, TrendingDown, Trash2, TrashIcon, Copy } from 'lucide-react';
 import { format } from 'date-fns';
@@ -21,9 +22,18 @@ interface HistoryLogProps {
   onDelete: (id: string) => void;
   onDuplicate: (snapshot: HistorySnapshot) => void;
   onClearAll: () => void;
+  displayCurrency?: Currency;
+  conversionRates?: ConversionRate[];
 }
 
-export const HistoryLog = ({ snapshots, onDelete, onDuplicate, onClearAll }: HistoryLogProps) => {
+const convertFromEURTo = (amountEUR: number, targetCurrency: Currency, conversionRates: ConversionRate[]): number => {
+  if (targetCurrency === 'EUR') return amountEUR;
+  const rate = conversionRates.find((r) => r.currency === targetCurrency);
+  if (!rate || rate.rate === 0) return amountEUR;
+  return amountEUR / rate.rate;
+};
+
+export const HistoryLog = ({ snapshots, onDelete, onDuplicate, onClearAll, displayCurrency = 'EUR', conversionRates = [] }: HistoryLogProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [snapshotToDelete, setSnapshotToDelete] = useState<string | null>(null);
   const sortedSnapshots = [...snapshots].sort(
@@ -104,7 +114,7 @@ export const HistoryLog = ({ snapshots, onDelete, onDuplicate, onClearAll }: His
                         <TrendingDown className="h-4 w-4" />
                       )}
                       {change > 0 ? '+' : ''}
-                      {formatCurrency(change, 'EUR')} ({changePercent.toFixed(1)}%)
+                      {formatCurrency(convertFromEURTo(change, displayCurrency, conversionRates), displayCurrency)} ({changePercent.toFixed(1)}%)
                     </div>
                   )}
                   <Button
@@ -132,25 +142,25 @@ export const HistoryLog = ({ snapshots, onDelete, onDuplicate, onClearAll }: His
                 <div>
                   <p className="text-xs text-muted-foreground">Net Worth</p>
                   <p className="text-sm font-semibold text-foreground">
-                    {formatCurrency(snapshot.netWorthEUR, 'EUR')}
+                    {formatCurrency(convertFromEURTo(snapshot.netWorthEUR, displayCurrency, conversionRates), displayCurrency)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Assets</p>
                   <p className="text-sm font-semibold text-green-600">
-                    {formatCurrency(snapshot.totalAssetsEUR, 'EUR')}
+                    {formatCurrency(convertFromEURTo(snapshot.totalAssetsEUR, displayCurrency, conversionRates), displayCurrency)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Liabilities</p>
                   <p className="text-sm font-semibold text-red-600">
-                    {formatCurrency(snapshot.totalLiabilitiesEUR, 'EUR')}
+                    {formatCurrency(convertFromEURTo(snapshot.totalLiabilitiesEUR, displayCurrency, conversionRates), displayCurrency)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Liquid Net Worth</p>
                   <p className="text-sm font-semibold text-primary">
-                    {formatCurrency(snapshot.liquidNetWorthEUR, 'EUR')}
+                    {formatCurrency(convertFromEURTo(snapshot.liquidNetWorthEUR, displayCurrency, conversionRates), displayCurrency)}
                   </p>
                 </div>
               </div>

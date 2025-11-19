@@ -13,6 +13,7 @@ import { HistoryLog } from '@/components/HistoryLog';
 import { ViewToggles } from '@/components/ViewToggles';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CurrencySelector } from '@/components/CurrencySelector';
 import { Plus, Wallet, RefreshCw, Save, Download, Upload, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { defaultConversionRates } from '@/lib/currency';
@@ -22,6 +23,13 @@ const getRateToEUR = (currency: Currency, conversionRates: ConversionRate[]): nu
   if (currency === 'EUR') return 1;
   const rate = conversionRates.find((r) => r.currency === currency);
   return rate?.rate ?? 0;
+};
+
+const convertFromEURTo = (amountEUR: number, targetCurrency: Currency, conversionRates: ConversionRate[]): number => {
+  if (targetCurrency === 'EUR') return amountEUR;
+  const rate = conversionRates.find((r) => r.currency === targetCurrency);
+  if (!rate || rate.rate === 0) return amountEUR;
+  return amountEUR / rate.rate;
 };
 
 const Index = () => {
@@ -40,6 +48,7 @@ const Index = () => {
   const [showNonCurrentAssets, setShowNonCurrentAssets] = useLocalStorage('show-non-current-assets', true);
   const [showCurrentLiabilities, setShowCurrentLiabilities] = useLocalStorage('show-current-liabilities', true);
   const [showNonCurrentLiabilities, setShowNonCurrentLiabilities] = useLocalStorage('show-non-current-liabilities', true);
+  const [displayCurrency, setDisplayCurrency] = useLocalStorage<Currency>('display-currency', 'EUR');
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
@@ -491,7 +500,14 @@ const Index = () => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border">
+                <span className="text-xs font-medium text-muted-foreground">Display:</span>
+                <CurrencySelector
+                  value={displayCurrency}
+                  onChange={(currency) => setDisplayCurrency(currency)}
+                />
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -579,9 +595,10 @@ const Index = () => {
         {/* Net Worth Summary Card */}
         <div className="mb-8">
           <NetWorthCard
-            assetsEUR={summary.totalAssetsEUR}
-            liabilitiesEUR={summary.totalLiabilitiesEUR}
+            assetsEUR={convertFromEURTo(summary.totalAssetsEUR, displayCurrency, conversionRates)}
+            liabilitiesEUR={convertFromEURTo(summary.totalLiabilitiesEUR, displayCurrency, conversionRates)}
             isMainCard={true}
+            displayCurrency={displayCurrency}
           />
           
           {/* Liquid vs Total Net Worth */}
@@ -589,13 +606,13 @@ const Index = () => {
             <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
               <p className="text-xs sm:text-sm text-muted-foreground mb-1">Liquid Net Worth</p>
               <p className={`text-xl sm:text-2xl font-bold ${liquidNetWorth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {liquidNetWorth.toLocaleString('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                {convertFromEURTo(liquidNetWorth, displayCurrency, conversionRates).toLocaleString('en-US', { style: 'currency', currency: displayCurrency, maximumFractionDigits: 0 })}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
               <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Net Worth</p>
               <p className={`text-xl sm:text-2xl font-bold ${summary.netWorthEUR >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {summary.netWorthEUR.toLocaleString('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                {convertFromEURTo(summary.netWorthEUR, displayCurrency, conversionRates).toLocaleString('en-US', { style: 'currency', currency: displayCurrency, maximumFractionDigits: 0 })}
               </p>
             </div>
           </div>
@@ -633,17 +650,18 @@ const Index = () => {
         {/* Retirement Planning Module */}
         <div className="mb-8">
           <RetirementPlanning
-            liquidNetWorthEUR={liquidNetWorth}
-            liquidAssetsEUR={liquidAssetsEUR}
-            retirementAssetsEUR={retirementAssetsEUR}
+            liquidNetWorthEUR={convertFromEURTo(liquidNetWorth, displayCurrency, conversionRates)}
+            liquidAssetsEUR={convertFromEURTo(liquidAssetsEUR, displayCurrency, conversionRates)}
+            retirementAssetsEUR={convertFromEURTo(retirementAssetsEUR, displayCurrency, conversionRates)}
             monthlyExpenses={monthlyExpenses}
             onInputsChange={setRetirementInputs}
             savedInputs={retirementInputs}
+            displayCurrency={displayCurrency}
           />
         </div>
 
         {/* Visual Charts */}
-        <FinancialCharts accounts={accounts} conversionRates={conversionRates} />
+        <FinancialCharts accounts={accounts} conversionRates={conversionRates} displayCurrency={displayCurrency} />
 
         {/* Add Account Button */}
         <div className="mb-4 sm:mb-6">
@@ -688,6 +706,8 @@ const Index = () => {
             onDelete={deleteSnapshot}
             onDuplicate={duplicateSnapshot}
             onClearAll={clearHistory}
+            displayCurrency={displayCurrency}
+            conversionRates={conversionRates}
           />
           </div>
         )}
