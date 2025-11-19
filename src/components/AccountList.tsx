@@ -117,7 +117,6 @@ export const AccountList = ({
                   </div>
 
                   <CollapsibleContent className="mt-2 animate-accordion-down">
-                    <Separator className="mb-3" />
                     <div className="space-y-2 sm:space-y-3">
                       {categoryAccounts.map((account) => (
                         <div
