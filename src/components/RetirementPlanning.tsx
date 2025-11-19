@@ -287,7 +287,12 @@ export const RetirementPlanning = ({
             <YAxis 
               stroke="hsl(var(--muted-foreground))"
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+              tickFormatter={(value) => {
+                if (value >= 1000000000) return `€${(value / 1000000000).toFixed(1)}B`;
+                if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`;
+                if (value >= 1000) return `€${(value / 1000).toFixed(0)}K`;
+                return `€${value}`;
+              }}
               label={{ value: 'Portfolio Value', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
             />
             <RechartsTooltip
